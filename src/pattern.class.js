@@ -13,28 +13,39 @@
       //this.viewBox = options.x1 || 0;
       this.x = options.x || 0;
       this.y = options.y || 0;
+
       this.width = options.width || 0;
       this.height = options.height;
+
+      this.viewBox = options.viewBox;
+
       //this.transform
       this.objects = objects;
     },
 
     toObject: function() {
       return {
-        x: this.x1,
-        y: this.x2,
-        width: this.y1,
-        height: this.y2,
-        objects: this.objects
+        x: this.x,
+        y: this.y,
+        width: this.width,
+        height: this.height,
+        objects: this.objects,
+        viewBox: this.viewBox
       };
     },
 
     toLivePattern: function(ctx) {
-      var c = document.createElement('canvas'), tmpFabric, obj;
+      var c = fabric.document.createElement('canvas'), tmpFabric, obj;
       c.width = this.width;
       c.height = this.height;
       tmpFabric = new fabric.StaticCanvas(c);
+
       obj = fabric.util.groupSVGElements(this.objects);
+      obj.set({
+        left: obj.getLeft() + this.x,
+        top: obj.getTop() + this.y
+      });
+
       tmpFabric.add(obj).centerObject(obj).renderAll();
       return ctx.createPattern(c, 'repeat');
     }
@@ -52,7 +63,7 @@
       /**
        *  @example:
        *
-       *  <pattern id="pattern1" x="0" y="0" width="100" height="100">
+       *  <pattern id="pattern1" x="0" y="0" width="100" height="100" viewBox="...">
        *
        *  </pattern>
        *
@@ -93,10 +104,11 @@
 
       fabric.parseElements(elements, function(instances) {
         var newPattern = new fabric.Pattern(instances, {
-          x: coords.x1,
-          y: coords.y1,
+          x: coords.x,
+          y: coords.y,
           width: coords.w,
-          height: coords.h
+          height: coords.h,
+          viewBox: el.getAttribute('viewBox')
         });
         if (callback) {
           callback(instance, newPattern);
