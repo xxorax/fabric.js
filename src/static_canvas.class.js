@@ -528,10 +528,6 @@
         }
       }
 
-      if (this.clipTo) {
-        canvasToDrawOn.restore();
-      }
-
       // delegate rendering to group selection (if one exists)
       if (activeGroup) {
         //Store objects in group preserving order, then replace
@@ -542,7 +538,11 @@
             }
         });
         activeGroup._set('objects', sortedObjects);
-        this._draw(this.contextTop, activeGroup);
+        this._draw(canvasToDrawOn, activeGroup);
+      }
+
+      if (this.clipTo) {
+        canvasToDrawOn.restore();
       }
 
       if (this.overlayImage) {
