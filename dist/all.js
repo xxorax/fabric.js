@@ -3725,6 +3725,11 @@ fabric.util.string = {
           instances[i].set('fill',
             fabric.Gradient.fromElement(fabric.gradientDefs[gradientId], instances[i]));
         }
+        else if (fabric.patternDefs[gradientId]) {
+            fabric.Pattern.fromElement(fabric.patternDefs[gradientId], instances[i], function(instance, element){
+              instance.set('fill',element);
+            });
+        }
       }
     }
   }
@@ -3850,7 +3855,6 @@ fabric.util.string = {
 
     return styles;
   }
-
   /**
    * Parses an SVG document, converts it to an array of corresponding fabric.* instances and passes them to a callback
    * @static
@@ -3938,6 +3942,7 @@ fabric.util.string = {
       };
 
       fabric.gradientDefs = fabric.getGradientDefs(doc);
+      fabric.patternDefs = fabric.getPatternDefs(doc);
       fabric.cssRules = getCSSRules(doc);
 
       // Precedence of rules:   style > class > attribute
@@ -4306,6 +4311,149 @@ fabric.util.string = {
   }
 
   fabric.getGradientDefs = getGradientDefs;
+
+})();
+(function() {
+
+  /**
+   * @class Object
+   * @memberOf fabric
+   */
+  fabric.Pattern = fabric.util.createClass(/** @scope fabric.Pattern.prototype */ {
+
+    initialize: function(objects, options) {
+
+      options || (options = { });
+
+      //this.viewBox = options.x1 || 0;
+      this.x = options.x || 0;
+      this.y = options.y || 0;
+      this.width = options.width || 0;
+      this.height = options.height;
+      //this.transform
+      this.objects = objects;
+    },
+
+    toObject: function() {
+      return {
+        x: this.x1,
+        y: this.x2,
+        width: this.y1,
+        height: this.y2,
+        objects: this.objects
+      };
+    },
+
+    toLivePattern: function(ctx) {
+      var c = document.createElement('canvas'), tmpFabric, obj;
+      c.width = this.width;
+      c.height = this.height;
+      tmpFabric = new fabric.StaticCanvas(c);
+      obj = fabric.util.groupSVGElements(this.objects);
+      tmpFabric.add(obj).centerObject(obj).renderAll();
+      return ctx.createPattern(c, 'repeat');
+    }
+  });
+
+  fabric.util.object.extend(fabric.Pattern, {
+
+    /**
+     * @method fromElement
+     * @static
+     * @see http://www.w3.org/TR/SVG/pservers.html#LinearGradientElement
+     */
+    fromElement: function(el, instance, callback) {
+
+      /**
+       *  @example:
+       *
+       *  <pattern id="pattern1" x="0" y="0" width="100" height="100">
+       *
+       *  </pattern>
+       *
+       */
+
+      var coords = {
+          x: el.getAttribute('x') || 0,
+          y: el.getAttribute('y') || 0,
+          w: el.getAttribute('width') || 0,
+          h: el.getAttribute('height') || 0
+        },
+        descendants = fabric.util.toArray(el.getElementsByTagName('*')),
+        reAllowedSVGTagNames = /^(path|circle|polygon|polyline|ellipse|rect|line|image|text)$/;
+
+      function hasAncestorWithNodeName(element, nodeName) {
+        while (element && (element = element.parentNode)) {
+          if (nodeName.test(element.nodeName)) {
+            return true;
+          }
+        }
+        return false;
+      }
+
+      if (descendants.length === 0) {
+        // we're likely in node, where "o3-xml" library fails to gEBTN("*")
+        // https://github.com/ajaxorg/node-o3-xml/issues/21
+        descendants = el.selectNodes("//*[name(.)!='svg']");
+        var arr = [ ];
+        for (var i = 0, len = descendants.length; i < len; i++) {
+          arr[i] = descendants[i];
+        }
+        descendants = arr;
+      }
+
+      var elements = descendants.filter(function(el) {
+        return reAllowedSVGTagNames.test(el.tagName); // http://www.w3.org/TR/SVG/struct.html#DefsElement
+      });
+
+      fabric.parseElements(elements, function(instances) {
+        var newPattern = new fabric.Pattern(instances, {
+          x: coords.x1,
+          y: coords.y1,
+          width: coords.w,
+          height: coords.h
+        });
+        if (callback) {
+          callback(instance, newPattern);
+        }
+      });
+    },
+
+    /**
+     * @method forObject
+     * @static
+     */
+    forObject: function(obj, options) {
+      options || (options = { });
+
+      return new fabric.Pattern(objects, options);
+    }
+  });
+
+  /**
+   * Parses an SVG document, returning all of the pattern declarations found in it
+   * @static
+   * @function
+   * @memberOf fabric
+   * @method getPatternDefs
+   * @param {SVGDocument} doc SVG document to parse
+   * @return {Object} Pattern definitions; key corresponds to element id, value -- to Pattern definition element
+   */
+  function getPatternDefs(doc) {
+    var patternEls = doc.getElementsByTagName('pattern'),
+      el, i,
+      patternDefs = { };
+
+    i = patternEls.length;
+    for (; i--; ) {
+      el = patternEls[i];
+      patternDefs[el.getAttribute('id')] = el;
+    }
+
+    return patternDefs;
+  }
+
+  fabric.getPatternDefs = getPatternDefs;
 
 })();
 (function(global) {
@@ -8302,9 +8450,13 @@ fabric.util.object.extend(fabric.StaticCanvas.prototype, {
         ctx.fillStyle = this.overlayFill;
       }
       else if (this.fill) {
-        ctx.fillStyle = this.fill.toLiveGradient
-          ? this.fill.toLiveGradient(ctx)
-          : this.fill;
+        if(this.fill.toLiveGradient){
+          ctx.fillStyle = this.fill.toLiveGradient(ctx);
+        }else if(this.fill.toLivePattern){
+          ctx.fillStyle = this.fill.toLivePattern(ctx)
+        }else {
+          ctx.fillStyle = this.fill;
+        }
       }
 
       if (m && this.group) {

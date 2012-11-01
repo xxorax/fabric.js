@@ -540,9 +540,13 @@
         ctx.fillStyle = this.overlayFill;
       }
       else if (this.fill) {
-        ctx.fillStyle = this.fill.toLiveGradient
-          ? this.fill.toLiveGradient(ctx)
-          : this.fill;
+        if(this.fill.toLiveGradient){
+          ctx.fillStyle = this.fill.toLiveGradient(ctx);
+        }else if(this.fill.toLivePattern){
+          ctx.fillStyle = this.fill.toLivePattern(ctx)
+        }else {
+          ctx.fillStyle = this.fill;
+        }
       }
 
       if (m && this.group) {

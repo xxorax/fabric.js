@@ -309,6 +309,11 @@
           instances[i].set('fill',
             fabric.Gradient.fromElement(fabric.gradientDefs[gradientId], instances[i]));
         }
+        else if (fabric.patternDefs[gradientId]) {
+            fabric.Pattern.fromElement(fabric.patternDefs[gradientId], instances[i], function(instance, element){
+              instance.set('fill',element);
+            });
+        }
       }
     }
   }
@@ -434,7 +439,6 @@
 
     return styles;
   }
-
   /**
    * Parses an SVG document, converts it to an array of corresponding fabric.* instances and passes them to a callback
    * @static
@@ -522,6 +526,7 @@
       };
 
       fabric.gradientDefs = fabric.getGradientDefs(doc);
+      fabric.patternDefs = fabric.getPatternDefs(doc);
       fabric.cssRules = getCSSRules(doc);
 
       // Precedence of rules:   style > class > attribute
