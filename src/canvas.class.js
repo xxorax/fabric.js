@@ -318,28 +318,24 @@
             ? 'scaleY'
             : corner === 'mtr'
               ? 'rotate'
-              : 'scale';
+              : target.cornerRotate
+                ? 'rotateScale'
+                : 'scale';
       }
 
       var originX = "center", originY = "center";
-
-      if (corner === 'ml' || corner === 'tl' || corner === 'bl') {
-        originX = "right";
-      }
-      else if (corner === 'mr' || corner === 'tr' || corner === 'br') {
-        originX = "left";
-      }
-
-      if (corner === 'tl' || corner === 'mt' || corner === 'tr') {
-        originY = "bottom";
-      }
-      else if (corner === 'bl' || corner === 'mb' || corner === 'br') {
-        originY = "top";
-      }
-
-      if (corner === 'mtr') {
-        originX = 'center';
-        originY = 'center';
+      if (action != 'rotate' && action != 'rotateScale' ) {
+        if (-1 !== ['ml', 'tl', 'bl'].indexOf(corner)) {
+          originX = "right";
+        } else if (-1 !== ['mr', 'tr', 'br'].indexOf(corner)) {
+          originX = "left";
+        }
+        
+        if (-1 !== ['tl', 'mt', 'tr'].indexOf(corner)) {
+          originY = "bottom";
+        } else if (-1 !== ['bl', 'mb', 'br'].indexOf(corner)) {
+          originY = "top";
+        }
       }
 
       // var center = target.getCenterPoint();
@@ -501,7 +497,11 @@
       // Actually scale the object
       var newScaleX = target.scaleX, newScaleY = target.scaleY;
       if (by === 'equally' && !lockScalingX && !lockScalingY) {
-        var dist = localMouse.y + localMouse.x;
+        // avoid flip if origins are the center
+        var dist = (t.originY === 'center' && t.originX === 'center')
+          ? Math.sqrt(Math.pow(localMouse.y + localMouse.x,2))
+          : localMouse.y + localMouse.x;
+        
         var lastDist = (target.height) * t.original.scaleY +
                        (target.width) * t.original.scaleX +
                        (target.padding * 2) -

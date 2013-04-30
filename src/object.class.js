@@ -238,6 +238,13 @@
      * @type Number
      */
     rotatingPointOffset:      40,
+    
+    /**
+     * When set to `true`, object's corners will be used for re-scale with uniScalling and rotate (even if there is always a rotating point).
+     * Shift key can be use to lock rotation.
+     * @type Boolean
+     */
+    cornerRotate:             false,
 
     /**
      * When set to `true`, objects are "found" on canvas on per-pixel basis rather than according to bounding box
