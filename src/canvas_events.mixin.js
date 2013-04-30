@@ -330,11 +330,23 @@
           reset = true;
         }
 
-        if (transform.action === 'rotate') {
+        if (transform.action === 'scale') {
           this._rotateObject(x, y);
 
           this.fire('object:rotating', { target: target, e: e });
           target.fire('rotating', { e: e });
+        }
+        else if (transform.action === 'rotateScale') {
+          if (!e.shiftKey) {
+            this._rotateObject(x, y);
+
+            this.fire('object:rotating', { target: target, e: e });
+            target.fire('rotating', { e: e });
+          }
+          
+          this._scaleObject(x, y, 'equally');
+          this.fire('object:scaling', { target: target, e: e });
+          target.fire('scaling', { e: e });
         }
         else if (transform.action === 'scale') {
           // rotate object only if shift key is not pressed
